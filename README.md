@@ -45,6 +45,11 @@ To add a fourth environment:
 That's it — the ApplicationSet picks up the new element and renders the
 matching Application.
 
+## Promoting a tag
+
+Bump `newTag` in `overlays/dev/kustomization.yaml`, let dev auto-sync, then repeat
+in `overlays/stage`. Once stage looks good, bump `overlays/prod` and sync it manually.
+
 ## Status
 
 Tested with kustomize build, kubeconform and a rendered-output test only. Not

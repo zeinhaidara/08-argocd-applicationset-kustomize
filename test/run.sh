@@ -10,11 +10,13 @@ echo "$dev" | grep -A1 "^spec:" | grep -q "replicas: 1" && echo "ok: dev has 1 r
 
 echo "$stage" | grep -q "replicas: 2" && echo "$prod" | grep -q "replicas: 3" && echo "ok: stage has 2 replicas and prod has 3"
 
+tags=()
 for env in dev stage prod; do
   tag=$(grep "newTag:" overlays/$env/kustomization.yaml | sed 's/.*newTag: *"\?\([^"]*\)"\?/\1/')
   kustomize build overlays/$env | grep -q "image: nginx:$tag" || { echo "fail: $env image tag mismatch"; exit 1; }
+  tags+=("$tag")
 done
-echo "ok: every overlay's rendered image tag matches its kustomization"
+[ "${tags[0]}" = "${tags[1]}" ] && [ "${tags[1]}" = "${tags[2]}" ] && echo "ok: dev, stage and prod all use the same image tag"
 
 [ "$(grep -c '^ *- env: ' applicationset.yaml)" -eq 3 ] && echo "ok: applicationset has exactly 3 list elements"
 

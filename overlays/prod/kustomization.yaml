@@ -6,4 +6,4 @@ patches:
   - path: patch-replicas.yaml
 images:
   - name: nginx
-    newTag: "1.27.1"
+    newTag: "1.27.2"
