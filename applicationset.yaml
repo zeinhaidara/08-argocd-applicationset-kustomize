@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: web
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - env: dev
+            clusterURL: https://dev.example.com
+            autosync: "true"
+          - env: stage
+            clusterURL: https://stage.example.com
+            autosync: "true"
+          - env: prod
+            clusterURL: https://prod.example.com
+            autosync: "false"
+  template:
+    metadata:
+      name: "web-{{.env}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://example.com/placeholder-org/placeholder-repo.git
+        targetRevision: main
+        path: "overlays/{{.env}}"
+      destination:
+        server: "{{.clusterURL}}"
+        namespace: "web-{{.env}}"
+  templatePatch: |
+    {{- if eq .autosync "true" }}
+    spec:
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+    {{- end }}
