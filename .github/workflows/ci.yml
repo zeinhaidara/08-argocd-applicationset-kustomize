@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      # v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: install yamllint
+        run: pip install --quiet yamllint==1.35.1
+
+      - name: install kustomize
+        run: |
+          curl -sLO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz
+          echo "3669470b454d865c8184d6bce78df05e977c9aea31c30df3c669317d43bcc7a7  kustomize_v5.4.3_linux_amd64.tar.gz" | sha256sum -c -
+          tar xz < kustomize_v5.4.3_linux_amd64.tar.gz
+          sudo mv kustomize /usr/local/bin/kustomize
+
+      - name: install kubeconform
+        run: |
+          curl -sLO https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          echo "95f14e87aa28c09d5941f11bd024c1d02fdc0303ccaa23f61cef67bc92619d73  kubeconform-linux-amd64.tar.gz" | sha256sum -c -
+          tar xz < kubeconform-linux-amd64.tar.gz
+          sudo mv kubeconform /usr/local/bin/kubeconform
+
+      - name: yamllint
+        run: yamllint .
+
+      - name: kustomize build
+        run: |
+          mkdir -p rendered
+          for env in dev stage prod; do
+            kustomize build overlays/$env > rendered/$env.yaml
+          done
+
+      - name: kubeconform
+        run: kubeconform -ignore-missing-schemas -summary rendered/*.yaml
+
+      - name: run tests
+        run: bash test/run.sh
