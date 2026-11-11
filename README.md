@@ -1,4 +1,4 @@
-# ApplicationSet + Kustomize
+# Argo CD ApplicationSet with Kustomize overlays
 
 Hand-copying the same app into dev, stage and prod configs lets the environments
 drift apart over time. Each one ends up patched a little differently by hand, and
@@ -55,9 +55,15 @@ in `overlays/stage`. Once stage looks good, bump `overlays/prod` and sync it man
 Tested with kustomize build, kubeconform and a rendered-output test only. Not
 applied to any Argo CD instance.
 
-## Limits
+## Known limitations
 
 - The ApplicationSet is not run against a real Argo CD.
 - Cluster URLs are placeholders.
 - Secrets are not handled.
 - Sync waves and progressive rollout are not included.
+
+## Runtime security
+
+Workloads use a non-root UID/GID, RuntimeDefault seccomp, a read-only root filesystem, no privilege escalation and no Linux capabilities. An `emptyDir` at `/tmp` supplies writable runtime storage. These are configuration defaults, validated with rendered manifests and schema checks in CI; no real cluster execution is claimed.
+
+Nginx listens on unprivileged port 8080; Service port 80 maps to it. Its mounted configuration keeps PID and temporary files under `/tmp` and bypasses the image entrypoint scripts. CI also checks `nginx -t` with the same non-root/read-only constraints.

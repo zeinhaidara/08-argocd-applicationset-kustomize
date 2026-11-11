@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -43,3 +46,11 @@ jobs:
 
       - name: run tests
         run: bash test/run.sh
+
+      - name: non-root nginx runtime smoke
+        run: |
+          tag=$(sed -n 's/.*newTag: *"\?\([^" ]*\)"\?$/\1/p' overlays/dev/kustomization.yaml)
+          docker run --rm --read-only --tmpfs /tmp:uid=101,gid=101 \
+            --user 101:101 --cap-drop ALL --security-opt no-new-privileges \
+            --mount "type=bind,source=$PWD/base/nginx.conf,target=/etc/nginx/nginx.conf,readonly" \
+            --entrypoint nginx "nginx:$tag" -t
